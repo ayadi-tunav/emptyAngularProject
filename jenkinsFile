@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        NODE_VERSION = "10.24.1"
+        NODE_DIR = "C:\\jenkins_node"
+    }
+
+    stages {
+        stage('Download Node.js') {
+            steps {
+                script {
+                    def nodeUrl = "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-x64.zip"
+                    def nodeZip = "${NODE_DIR}\\node.zip"
+
+                    bat "mkdir ${NODE_DIR} || echo Directory exists"
+                    bat "powershell -Command Invoke-WebRequest -Uri ${nodeUrl} -OutFile ${nodeZip}"
+                    bat "powershell -Command Expand-Archive -Path ${nodeZip} -DestinationPath ${NODE_DIR} -Force"
+                }
+            }
+        }
+
+        stage('Verify Node.js Version') {
+            steps {
+                script {
+                    def nodeBin = "${NODE_DIR}\\node-v${NODE_VERSION}-win-x64\\node.exe"
+                    bat "${nodeBin} -v"
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    def npmBin = "${NODE_DIR}\\node-v${NODE_VERSION}-win-x64\\npm.cmd"
+                    bat "${npmBin} install"
+                }
+            }
+        }
+
+        stage('Build Angular App') {
+            steps {
+                script {
+                    def npmBin = "${NODE_DIR}\\node-v${NODE_VERSION}-win-x64\\npm.cmd"
+                    bat "${npmBin} run build -- --configuration=production"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build successful!'
+        }
+        failure {
+            echo 'Build failed. Check logs for errors.'
+        }
+    }
+}
